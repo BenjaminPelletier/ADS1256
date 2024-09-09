@@ -32,11 +32,8 @@ void DRDY_ISR()
 #endif
 
 void waitForDRDY() //A function that waits for the DRDY status to change via the ISR()
-{		
+{
 	while (DRDY_value == false) {}
-	noInterrupts();
-	DRDY_value = false; //Reset the DRDY_value manually to false while disabling the interrupts
-	interrupts();	
 }
 
 //----
@@ -542,8 +539,9 @@ void ADS1256::writeRegister(uint8_t registerAddress, uint8_t registerValueToWrit
   
   digitalWrite(_CS_pin, HIGH);
   SPI.endTransaction();
-  delay(100);
+  DRDY_value = false;
   
+  delay(100);
 }
 
 long ADS1256::readRegister(uint8_t registerAddress) //Reading a register
@@ -565,6 +563,8 @@ long ADS1256::readRegister(uint8_t registerAddress) //Reading a register
 
   digitalWrite(_CS_pin, HIGH);
   SPI.endTransaction();
+  DRDY_value = false;
+  
   delay(100);
   return _registerValuetoRead;
 }
@@ -580,7 +580,7 @@ long ADS1256::readSingle() //Reading a single value ONCE using the RDATA command
 
 	_outputBuffer[0] = SPI.transfer(0); // MSB
 	_outputBuffer[1] = SPI.transfer(0); // Mid-byte
-	_outputBuffer[2] = SPI.transfer(0); // LSB		
+	_outputBuffer[2] = SPI.transfer(0); // LSB
 
 	//Shifting and combining the above three items into a single, 24-bit number
 	_outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
@@ -588,6 +588,7 @@ long ADS1256::readSingle() //Reading a single value ONCE using the RDATA command
 	
 	digitalWrite(_CS_pin, HIGH); //We finished the command sequence, so we set CS to HIGH
 	SPI.endTransaction();
+	DRDY_value = false;
   
 	return(_outputValue);
 }
@@ -612,6 +613,8 @@ long ADS1256::readSingleContinuous() //Reads the recently selected input channel
 	_outputBuffer[0] = SPI.transfer(0); // MSB 
 	_outputBuffer[1] = SPI.transfer(0); // Mid-byte
 	_outputBuffer[2] = SPI.transfer(0); // LSB
+	
+	DRDY_value = false;
 	
 	_outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
 	_outputValue = convertSigned24BitToLong(_outputValue);
@@ -706,6 +709,8 @@ long ADS1256::cycleSingle()
 	  _outputBuffer[0] = SPI.transfer(0x0F); // MSB 
 	  _outputBuffer[1] = SPI.transfer(0x0F); // Mid-byte
 	  _outputBuffer[2] = SPI.transfer(0x0F); // LSB
+	  
+	  DRDY_value = false;
 		
 	  _outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
 	  _outputValue = convertSigned24BitToLong(_outputValue);
@@ -786,6 +791,8 @@ long ADS1256::cycleDifferential()
 	  _outputBuffer[0] = SPI.transfer(0); // MSB 
 	  _outputBuffer[1] = SPI.transfer(0); // Mid-byte
 	  _outputBuffer[2] = SPI.transfer(0); // LSB
+	  
+	  DRDY_value = false;
 		
 	  _outputValue = ((long)_outputBuffer[0]<<16) | ((long)_outputBuffer[1]<<8) | (_outputBuffer[2]);
 	  _outputValue = convertSigned24BitToLong(_outputValue);
